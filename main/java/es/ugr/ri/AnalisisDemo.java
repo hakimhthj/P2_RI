@@ -1,6 +1,9 @@
 package es.ugr.ri;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -49,14 +52,9 @@ public class AnalisisDemo {
     }
 
     public static void main(String[] args) throws Exception {
-        // Texto de 100-200 palabras con tildes, puntuación, números, nombres propios y términos compuestos
-        String texto = "El pasado 15 de marzo de 2026, la Universidad de Granada (UGR) organizó un simposio internacional "
-                     + "sobre la recuperación de información y el aprendizaje automático en España. El profesor Juan F. Huete "
-                     + "presentó un sistema web-based capaz de procesar rápidamente 50.000 consultas complejas. "
-                     + "Los investigadores analizaron la eficacia de las herramientas open-source como Apache Lucene 10.5.2, "
-                     + "evaluando la precisión, la cobertura semántica y la eliminación de términos irrelevantes. "
-                     + "A pesar de las dificultades morfológicas, la solución técnica demostró una mejora del 18.5% en "
-                     + "los resultados de búsqueda textual.";
+        // Texto externo en UTF-8; se puede indicar otra ruta como primer argumento.
+        Path rutaTexto = Path.of(args.length > 0 ? args[0] : "texto_naruto.txt");
+        String texto = Files.readString(rutaTexto, StandardCharsets.UTF_8);
 
         // Analizadores básicos
         try (Analyzer ws = new WhitespaceAnalyzer();
@@ -86,3 +84,4 @@ public class AnalisisDemo {
         }
     }
 }
+
