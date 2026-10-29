@@ -7,26 +7,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
-import org.apache.lucene.analysis.en.PorterStemFilter;
-import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -45,7 +36,7 @@ import org.apache.lucene.util.BytesRef;
  * Cada fila representa una pregunta distinta; frequency cuenta apariciones
  * en pares de Quora, NO el número de búsquedas de usuarios.
  *
- * Ejecutar: java ... es.ugr.ri.Suggestion ruta.tsv [standard|english|question|whitespace]
+ * Ejecutar: java ... es.ugr.ri.Suggestion ruta.tsv [standard|english|question|question-initial|whitespace]
  *                                     [uniform|frequency] [prefix|fuzzy|infix|next]
  * Si no se especifica la estrategia se ofrece un menú interactivo.
  */
@@ -112,58 +103,22 @@ public class Suggestion {
         @Override public boolean hasContexts() { return false; }
     }
 
-    /**
-     * Analizador de partida para preguntas en inglés.
-     *
-     * Conserva auxiliares y términos interrogativos que EnglishAnalyzer elimina
-     * como stopwords. El conjunto STEM_EXCLUSIONS queda deliberadamente pequeño:
-     * en la actividad 2 el estudiante debe justificar, a partir del corpus, qué
-     * términos conviene proteger del stemming y comparar el efecto.
-     */
-    static final class QuestionAnalyzer extends Analyzer {
-        private final CharArraySet stopwords;
-        private final CharArraySet stemExclusions;
-
-        QuestionAnalyzer() {
-            CharArraySet stops = CharArraySet.copy(EnglishAnalyzer.getDefaultStopSet());
-            for (String term : List.of(
-                    "what", "why", "when", "where", "who", "how", "which",
-                    "can", "could", "should", "would", "do", "does", "did",
-                    "is", "are", "was", "were")) {
-                stops.remove(term);
-            }
-            this.stopwords = CharArraySet.unmodifiableSet(stops);
-
-            // Punto de partida. Modificar y justificar en la actividad 2.
-            this.stemExclusions = CharArraySet.EMPTY_SET;
-        }
-
-        @Override
-        protected TokenStreamComponents createComponents(String fieldName) {
-            StandardTokenizer tokenizer = new StandardTokenizer();
-            TokenStream stream = new EnglishPossessiveFilter(tokenizer);
-            stream = new LowerCaseFilter(stream);
-            stream = new StopFilter(stream, stopwords);
-            if (!stemExclusions.isEmpty()) {
-                stream = new SetKeywordMarkerFilter(stream, stemExclusions);
-            }
-            stream = new PorterStemFilter(stream);
-            return new TokenStreamComponents(tokenizer, stream);
-        }
-    }
-
     static Analyzer analyzer(String name) {
         return switch (name.toLowerCase(Locale.ROOT)) {
             case "standard" -> new StandardAnalyzer();
             case "english" -> new EnglishAnalyzer();
             case "question" -> new QuestionAnalyzer();
+            case "question-initial" -> new QuestionAnalyzer(QuestionAnalyzer.Profile.INITIAL);
             case "whitespace" -> new WhitespaceAnalyzer();
             default -> throw new IllegalArgumentException(
-                    "Analyzer: standard, english, question o whitespace");
+                    "Analyzer: standard, english, question, question-initial o whitespace");
         };
     }
 
-    static void showTokens(Analyzer analyzer, String input) throws IOException {
+    record TokenData(String term, int position, int increment, int start, int end) {}
+
+    static List<TokenData> tokens(Analyzer analyzer, String input) throws IOException {
+        List<TokenData> result = new ArrayList<>();
         try (TokenStream ts = analyzer.tokenStream("question", input)) {
             CharTermAttribute term = ts.addAttribute(CharTermAttribute.class);
             OffsetAttribute offset = ts.addAttribute(OffsetAttribute.class);
@@ -172,10 +127,24 @@ public class Suggestion {
             int pos = -1;
             while (ts.incrementToken()) {
                 pos += increment.getPositionIncrement();
-                System.out.printf("  %-24s pos=%-3d offsets=[%d,%d)%n",
-                    term, pos, offset.startOffset(), offset.endOffset());
+                result.add(new TokenData(term.toString(), pos, increment.getPositionIncrement(),
+                        offset.startOffset(), offset.endOffset()));
             }
             ts.end();
+        }
+        return result;
+    }
+
+    static void showTokens(Analyzer analyzer, String input) throws IOException {
+        for (TokenData token : tokens(analyzer, input))
+            System.out.printf("  %-24s pos=%-3d offsets=[%d,%d)%n",
+                    token.term(), token.position(), token.start(), token.end());
+    }
+
+    static void closeLookup(Lookup lookup) throws IOException {
+        if (lookup instanceof AutoCloseable closeable) {
+            try { closeable.close(); }
+            catch (Exception ex) { throw new IOException("Error al cerrar el suggester", ex); }
         }
     }
 
@@ -197,7 +166,23 @@ public class Suggestion {
             throws IOException {
         if (strategy.equals("infix"))
             return ((AnalyzingInfixSuggester) lookup).lookup(input, k, false, false);
-        return lookup.lookup(input, false, k);
+        try {
+            return lookup.lookup(input, false, k);
+        } catch (NullPointerException ex) {
+            // Incidencia reproducida con los huecos de StopFilter en Lucene 10.5.2.
+            // Solo se captura este fallo conocido; otros errores siguen propagándose.
+            StackTraceElement frame = ex.getStackTrace()[0];
+            if (strategy.equals("next") && frame.getClassName().equals(FreeTextSuggester.class.getName())
+                    && frame.getMethodName().equals("decodeWeight"))
+                throw new NextTermException(ex);
+            throw ex;
+        }
+    }
+
+    static final class NextTermException extends IOException {
+        NextTermException(Throwable cause) {
+            super("FreeTextSuggester 10.5.2: frecuencia de contexto ausente (hueco de posición)", cause);
+        }
     }
 
     static void run(String strategy, Analyzer analyzer, List<Question> questions,
@@ -211,22 +196,26 @@ public class Suggestion {
                 while (true) {
                     System.out.print("consulta> ");
                     if (!scanner.hasNextLine()) return;
-                    String input = scanner.nextLine().trim();
-                    if (input.equalsIgnoreCase("FIN")) return;
-                    if (input.isEmpty()) continue;
-                    List<Lookup.LookupResult> found = suggestions(lookup, strategy, input, 5);
+                    // El espacio final distingue completar un prefijo de predecir la siguiente palabra.
+                    String input = scanner.nextLine();
+                    if (input.trim().equalsIgnoreCase("FIN")) return;
+                    if (input.isBlank()) continue;
+                    List<Lookup.LookupResult> found;
+                    try { found = suggestions(lookup, strategy, input, 5); }
+                    catch (NextTermException ex) {
+                        System.out.println("  ERROR_LUCENE: " + ex.getMessage());
+                        continue;
+                    }
                     if (found.isEmpty()) System.out.println("  (sin sugerencias)");
                     int rank = 0;
                     for (Lookup.LookupResult r : found)
-                        System.out.printf("  %d. %s  [valor=%d]%n", ++rank, r.key, r.value);
+                        System.out.printf("  %d. %s  [valor=%d]%n", ++rank,
+                                r.key.toString().replace('\u001e', ' '), r.value);
                     if (strategy.equals("next"))
                         System.out.println("  Nota: 'valor' es una puntuación del modelo de lenguaje, no frequency.");
                 }
             } finally {
-                if (lookup instanceof AutoCloseable closeable) {
-                    try { closeable.close(); }
-                    catch (Exception e) { throw new IOException("Error al cerrar el suggester", e); }
-                }
+                closeLookup(lookup);
             }
         }
     }
@@ -234,7 +223,7 @@ public class Suggestion {
     public static void main(String[] args) throws IOException {
         if (args.length < 1 || args.length > 4) {
             System.err.println("Uso: Suggestion <quora_queries_50000.tsv> "
-                + "[standard|english|question|whitespace] [uniform|frequency] "
+                + "[standard|english|question|question-initial|whitespace] [uniform|frequency] "
                 + "[prefix|fuzzy|infix|next]");
             System.exit(2);
         }

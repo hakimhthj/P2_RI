@@ -1,0 +1,43 @@
+actividad	comparacion	consulta	espacio_final	analizador	pesos	estrategia	parametros	apartado_memoria
+2	Analizadores	How do I start learning data structures?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	How do I start learning data structures?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	How do I start learning data structures?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why is Taylor Swift so popular?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why is Taylor Swift so popular?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why is Taylor Swift so popular?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Where do we draw the line between hubris and pride?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Where do we draw the line between hubris and pride?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Where do we draw the line between hubris and pride?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Does Indianapolis have a strong youtubing community?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Does Indianapolis have a strong youtubing community?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Does Indianapolis have a strong youtubing community?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why are my questions not answered on Quora?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why are my questions not answered on Quora?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Why are my questions not answered on Quora?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Which is a relatively easy musical instrument to pick up and start learning?	no	standard	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Which is a relatively easy musical instrument to pick up and start learning?	no	english	no_aplica	tokens	no_aplica	2.1
+2	Analizadores	Which is a relatively easy musical instrument to pick up and start learning?	no	question	no_aplica	tokens	no_aplica	2.1
+2	Stopwords y stemming	university	no	english	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	university	no	question	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	community	no	english	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	community	no	question	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	learning	no	english	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	learning	no	question	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	are	no	english	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	are	no	question	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	was	no	english	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Stopwords y stemming	was	no	question	no_aplica	tokens	no_aplica	2.2; figura 2
+2	Antes y despues; qid 7343	Why are my questions not answered on Quora?	no	question-initial	no_aplica	tokens	no_aplica	2.3; figura 3
+2	Antes y despues; qid 7343	Why are my questions not answered on Quora?	no	question	no_aplica	tokens	no_aplica	2.3; figura 3
+3	Errata	How do I start learming	no	standard	frequency	prefix	k=5; constructor=predeterminado_Lucene_10.5.2	3.3; figura 4
+3	Errata	How do I start learming	no	standard	frequency	fuzzy	k=5; maxEdits=1; constructor=predeterminado_Lucene_10.5.2	3.3; figura 4
+3	Termino interior	hubris	no	standard	frequency	prefix	k=5; constructor=predeterminado_Lucene_10.5.2	3.3
+3	Termino interior	hubris	no	standard	frequency	infix	k=5; minPrefixChars=4; allTermsRequired=false; doHighlight=false; constructor=predeterminado_Lucene_10.5.2	3.3
+3	Pesos	How can I learn	no	standard	uniform	prefix	k=5; constructor=predeterminado_Lucene_10.5.2	3.4; figura 5
+3	Pesos	How can I learn	no	standard	frequency	prefix	k=5; constructor=predeterminado_Lucene_10.5.2	3.4; figura 5
+3	Analizadores y pesos en Next-term	machine	si	standard	frequency	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4
+3	Analizadores y pesos en Next-term	machine	si	english	frequency	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4
+3	Analizadores y pesos en Next-term	machine	si	question	frequency	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4
+3	Analizadores y pesos en Next-term	machine	si	standard	uniform	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4
+3	Analizadores y pesos en Next-term	machine	si	english	uniform	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4
+3	Analizadores y pesos en Next-term	machine	si	question	uniform	next	k=5; grams=2; alpha=0.4; constructor=predeterminado_Lucene_10.5.2	3.4

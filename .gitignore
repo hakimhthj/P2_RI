@@ -1,0 +1,6 @@
+﻿.idea/
+target/
+*.iml
+
+# Corpus oficial disponible en PRADO.
+/quora_queries_50000.tsv
